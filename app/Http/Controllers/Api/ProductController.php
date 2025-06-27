@@ -35,6 +35,8 @@ class ProductController extends Controller
                 'category_id' => 'required|exists:categories,id',
                 'is_hero' => 'nullable|boolean',
                 'is_flagship' => 'nullable|boolean',
+                'olfactive_notes' => 'nullable|string',
+                'gender' => 'nullable|string|in:male,female,unisex',
                 'images.*' => 'image|mimes:jpeg,png,jpg|max:5120',
             ]);
 
@@ -105,6 +107,8 @@ public function update(Request $request, $id): JsonResponse
             'category_id' => 'sometimes|exists:categories,id',
             'is_hero' => 'nullable|boolean',
             'is_flagship' => 'nullable|boolean',
+            'olfactive_notes' => 'nullable|string',
+            'gender' => 'nullable|string|in:male,female,unisex',
             'images.*' => 'image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
@@ -184,7 +188,7 @@ public function update(Request $request, $id): JsonResponse
         Log::warning("⚠️ Validation failed", ['errors' => $e->errors()]);
         return response()->json(['errors' => $e->errors()], 422);
 
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         Log::error("❌ Update failed", [
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString()
