@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Log;
 
 class CategoryController extends Controller
 {
@@ -51,4 +52,11 @@ class CategoryController extends Controller
 
         return response()->json(['message' => 'Category deleted']);
     }
+
+    public function getWithProductCount()
+{
+    $categories = Category::withCount('products')->get();
+    Log::info('Fetched categories with product count', ['categories' => $categories]);
+    return response()->json($categories);
+}
 }

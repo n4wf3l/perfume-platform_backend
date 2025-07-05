@@ -208,4 +208,55 @@ public function update(Request $request, $id): JsonResponse
         $product->delete();
         return response()->json(['message' => 'Product deleted']);
     }
+
+   public function updateImageOrder(Request $request, $productId): JsonResponse
+{
+    try {
+        $product = Product::findOrFail($productId);
+
+        $request->validate([
+            'orders' => 'required|array',
+            'orders.*.id' => 'required|exists:product_images,id', // Fix: changed from images to product_images
+            'orders.*.order' => 'required|integer|min:0|max:2',
+        ]);
+
+        foreach ($request->orders as $imgOrder) {
+            $image = $product->images()->findOrFail($imgOrder['id']);
+            $image->update(['order' => $imgOrder['order']]);
+        }
+
+        return response()->json($product->images()->orderBy('order')->get());
+    } catch (Throwable $e) {
+        Log::error("❌ Image reorder failed", [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'error' => 'Failed to update image order',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+
+public function updateImage(Request $request, $productId, $imageId): JsonResponse
+{
+    $product = Product::findOrFail($productId);
+    $image = $product->images()->findOrFail($imageId);
+
+    $request->validate([
+        'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+    ]);
+
+    // Delete old image file
+    if (Storage::disk('public')->exists($image->path)) {
+        Storage::disk('public')->delete($image->path);
+    }
+
+    // Store new image
+    $path = $request->file('image')->store('products', 'public');
+    $image->update(['path' => $path]);
+
+    return response()->json($image->fresh());
+}
 }
