@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);//admin
     Route::post('/products/{product}/images/reorder', [ProductController::class, 'updateImageOrder']);
     Route::post('/products/{product}/images/{image}', [ProductController::class, 'updateImage']);
+    Route::post('/products/update-special', [ProductController::class, 'updateSpecialProducts']);
 
     
     Route::post('/categories', [CategoryController::class, 'store']);//admin

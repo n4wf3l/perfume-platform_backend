@@ -13,10 +13,21 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function index()
-    {
-        return Product::with(['images', 'category'])->get();
+    public function index(Request $request)
+{
+    $query = Product::with(['images', 'category']);
+
+    if ($request->has('is_hero')) {
+        $query->where('is_hero', true);
     }
+
+    if ($request->has('is_flagship')) {
+        $query->where('is_flagship', true);
+    }
+
+    return $query->get();
+}
+
 
     public function show($id)
     {
@@ -258,5 +269,70 @@ public function updateImage(Request $request, $productId, $imageId): JsonRespons
     $image->update(['path' => $path]);
 
     return response()->json($image->fresh());
+}
+
+public function updateSpecialProducts(Request $request): JsonResponse
+{
+    try {
+        $validated = $request->validate([
+            'featured' => 'required|array',
+            'featured.*' => 'integer|exists:products,id',
+            'hero' => 'required|array',
+            'hero.*' => 'integer|exists:products,id',
+        ]);
+
+        Log::info("🔄 Updating special products", [
+            'featured_count' => count($validated['featured']),
+            'hero_count' => count($validated['hero'])
+        ]);
+
+        // Validate counts
+        if (count($validated['featured']) > 3) {
+            throw ValidationException::withMessages([
+                'featured' => 'Maximum 3 featured products allowed.',
+            ]);
+        }
+
+        if (count($validated['hero']) > 1) {
+            throw ValidationException::withMessages([
+                'hero' => 'Only 1 hero product allowed.',
+            ]);
+        }
+
+        // Reset all special statuses
+        Product::query()->update([
+            'is_flagship' => false,
+            'is_hero' => false,
+        ]);
+
+        // Set featured products
+        if (!empty($validated['featured'])) {
+            Product::whereIn('id', $validated['featured'])->update(['is_flagship' => true]);
+        }
+
+        // Set hero product
+        if (!empty($validated['hero'])) {
+            Product::whereIn('id', $validated['hero'])->update(['is_hero' => true]);
+        }
+
+        return response()->json([
+            'message' => 'Special products updated successfully',
+            'featured_count' => count($validated['featured']),
+            'hero_count' => count($validated['hero']),
+        ]);
+    } catch (ValidationException $e) {
+        Log::warning('⚠️ Validation failed', ['errors' => $e->errors()]);
+        return response()->json(['errors' => $e->errors()], 422);
+    } catch (Throwable $e) {
+        Log::error('❌ Special products update failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'error' => 'Failed to update special products',
+            'details' => $e->getMessage()
+        ], 500);
+    }
 }
 }
