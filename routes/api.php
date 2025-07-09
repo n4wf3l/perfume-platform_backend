@@ -6,10 +6,11 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ContactController;
 
 
 Route::post('/login', [AuthController::class, 'login']);
-
+Route::post('/contact', [ContactController::class, 'send']);
 
 
 Route::get('/user', function (Request $request) {
